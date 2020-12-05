@@ -1,0 +1,103 @@
+laravel installl
+open env file and config database
+create auth athentication/auth package
+database/migration/users
+open users table
+add field
+$table->string('verification_code')->nullable();
+$table->string('is_verified')->default(0);
+run command (php artisan migrate)
+app/http/controller/auth/registercontroller
+open registercontroller and create method for change register
+create new user and add properties($user->verification_code = sha1(time());)
+Created Mail
+run command( php artisan make:Mail SignupEmail )
+app/Mail/SignupEmail.php
+                      public function __construct($data)
+                          {
+                              $this->email_data=$data;
+                          }
+
+                          /**
+                           * Build the message.
+                           *
+                           * @return $this
+                           */
+                          public function build()
+                          {
+                              return $this->from(env('MAIL_USERNAME'),'SolutionTech.com')->subject('Welcome To My SolutionTech')->view('Email.signup-email', ['email_data'=> $this->email_data]);
+                          }
+  created MailController
+  php artisan make:controller MailController
+  app/http/controller/MailController.php
+  
+                          use App\Mail\SignupEmail;
+                          use Illuminate\Http\Request;
+                          use Illuminate\Support\Facades\Mail;
+
+                          class MailController extends Controller
+                          {
+                             public static function sendSignupEmail($name, $email, $verification_code)
+                             {
+                                 $data=[
+                                     'name'=>$name,
+                                     'verification_code'=>$verification_code,
+                                 ];
+                                  Mail::to($email)->send(new SignupEmail($data));
+                             }
+
+    resources/view/Email/signup-email.blade.php
+    
+                           Hello {{$email_data['name']}}
+                          <br><br>
+                          Welcome to my website!
+                          <br><br>
+                          please click the below link to verify your email and activate your account!
+                          <br><br>
+                          <a href="http://localhost/emailverificationproject/public/verify?code={{ $email_data['verification_code'] }}">Click Here The Link</a>
+                          <br><br>
+                          Thank You!
+                          <br>
+                          SolutionTech!
+app/http/controller/auth/registercontroller.php
+                          if($user != null)
+                            {
+                                MailController::sendSignupEmail($user->name, $user->email,$user->verification_code);
+                                return redirect()->back()->with(session()->flash('alert-success','Your Account has been created.Please check your email verification link'));
+                            }
+                                return redirect()->back()->with(session()->flash('alert-error','Something went wrong'));
+created route web.php
+                            Route::get('/verify', 'Auth\RegisterController@verifyUser')->name('verify.user');
+                            
+Then,app/http/controller/auth/registercontroller.php
+ 
+ create function verifyUser and paste the code
+ 
+                                   public function verifyUser(Request $request)
+                                      {
+                                          $verification_code = \Illuminate\Support\Facades\Request::get('code');
+                                          $user = User::where(['verification_code'=>$verification_code])->first();
+                                          if($user != null)
+                                          {
+                                              $user->is_verified = 1;
+                                              $user->save();
+                                              return redirect()->route('login')->with(session()->flash('alert-success','Your Account is verified.Please login account!'));
+                                          }
+                                          return redirect()->route('login')->with(session()->flash('alert-error','invalid verification code!'));
+                                      }
+      
+ Then,app/http/controller/auth/logincontroller.php 
+ 
+ public function credentials(Request $request)
+    {
+        return array_merge($request->only($this->username(), 'password'),['is_verified'=>1]);
+    }
+ 
+ Have a Nice Day..................................
+      
+ 
+                            
+
+
+                          
+    
